@@ -1,6 +1,3 @@
-import Fluent
-import Vapor
-
 /// Protects a route group, requiring a password authenticatable
 /// instance to pass through.
 ///
@@ -38,7 +35,7 @@ public final class BasicAuthenticationMiddleware<A>: Middleware where A: BasicAu
     }
 }
 
-extension BasicAuthenticatable where Self: Model, Self.Database: QuerySupporting {
+extension BasicAuthenticatable where Self: Model {
     /// Creates a basic auth middleware for this model.
     /// See `BasicAuthenticationMiddleware`.
     public static func basicAuthMiddleware(using verifier: PasswordVerifier) -> BasicAuthenticationMiddleware<Self> {

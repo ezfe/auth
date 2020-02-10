@@ -1,11 +1,10 @@
-import Fluent
-import Vapor
-
 /// Models conforming to this protocol can have their authentication
 /// status cached using `AuthenticationSessionsMiddleware`.
 public protocol SessionAuthenticatable: Authenticatable {
+    /// Session identifier type.
     associatedtype SessionID: LosslessStringConvertible
 
+    /// Unique session identifier.
     var sessionID: SessionID? { get }
 
     /// Authenticate a model with the supplied ID.
@@ -23,11 +22,7 @@ extension Model where Self: SessionAuthenticatable, Self.ID: LosslessStringConve
 
     /// See `SessionAuthenticatable`.
     public static func authenticate(sessionID: Self.ID, on conn: DatabaseConnectable) -> Future<Self?> {
-        do {
-            return try find(sessionID, on: conn)
-        } catch {
-            return conn.eventLoop.newFailedFuture(error: error)
-        }
+        return find(sessionID, on: conn)
     }
 }
 
@@ -38,7 +33,6 @@ private extension SessionAuthenticatable {
 }
 
 extension Request {
-
     /// Authenticates the model into the session.
     public func authenticateSession<A>(_ a: A) throws where A: SessionAuthenticatable {
         try session()["_" + A.sessionName + "Session"] = a.sessionID?.description
@@ -47,6 +41,9 @@ extension Request {
 
     /// Un-authenticates the model from the session.
     public func unauthenticateSession<A>(_ a: A.Type) throws where A: SessionAuthenticatable {
+        guard try self.hasSession() else {
+            return
+        }
         try session()["_" + A.sessionName + "Session"] = nil
         try unauthenticate(A.self)
     }

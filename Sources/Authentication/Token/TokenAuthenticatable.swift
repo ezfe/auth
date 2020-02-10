@@ -10,7 +10,7 @@ public protocol TokenAuthenticatable: Authenticatable {
 
 /// A token, related to a user, capable of being used with Bearer auth.
 /// See `TokenAuthenticatable`.
-public protocol Token: BearerAuthenticatable  {
+public protocol Token: HeaderValueAuthenticatable  {
     /// The User type that owns this token.
     associatedtype UserType
 
@@ -30,15 +30,11 @@ extension Model where Self: Token, Self.UserType: Model {
 }
 
 extension TokenAuthenticatable
-    where Self: Model, Self.TokenType: Model, Self.Database: QuerySupporting, Self.TokenType.Database == Self.Database, Self.TokenType.UserIDType == Self.ID
+    where Self: Model, Self.TokenType: Model, Self.TokenType.Database == Self.Database, Self.TokenType.UserIDType == Self.ID
 {
     /// See `TokenAuthenticatable`.
     public static func authenticate(token: TokenType, on conn: DatabaseConnectable) -> Future<Self?> {
-        do {
-            return try token.authUser.get(on: conn).map { $0 }
-        } catch {
-            return conn.eventLoop.newFailedFuture(error: error)
-        }
+        return token.authUser.get(on: conn).map { $0 }
     }
 
     /// A relation to this user's tokens.
@@ -48,7 +44,7 @@ extension TokenAuthenticatable
 }
 
 extension Token
-    where Self: Model, Self.UserType: Model, Self.Database: QuerySupporting, Self.UserType.Database == Self.Database, Self.UserIDType == Self.UserType.ID
+    where Self: Model, Self.UserType: Model, Self.UserType.Database == Self.Database, Self.UserIDType == Self.UserType.ID
 {
     /// A relation to this token's owner.
     public var authUser: Parent<Self, UserType> {
